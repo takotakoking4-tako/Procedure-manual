@@ -4,9 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>現場作業手順書管理システム</title>
-  <!-- 外部ライブラリ (QRスキャン / Excel解析) -->
+  <!-- 外部ライブラリ (QRスキャン / Excel解析 / PDF解析) -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script>
+    // pdf.js のワーカー設定
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+  </script>
+
   <style>
     :root {
       --bg-dark: #000000;
@@ -95,20 +101,26 @@
     .canvas-wrapper { position: relative; width: 100%; margin: 0 auto; }
     canvas { display: block; width: 100%; height: auto; touch-action: none; }
 
+    /* ジャンプボタン：完全な長方形 (border-radiusなし) */
     .jump-overlay-btn {
       position: absolute; display: flex; align-items: center; justify-content: center;
-      font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.4);
-      user-select: none;
+      font-size: 12px; font-weight: bold; border-radius: 0px; cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.6);
+      user-select: none; box-sizing: border-color; overflow: hidden;
+    }
+    .jump-resize-handle {
+      position: absolute; right: 0; bottom: 0; width: 12px; height: 12px;
+      background: #ffffff; cursor: se-resize; border-top: 1px solid #333; border-left: 1px solid #333;
     }
 
     .action-bar {
       display: flex; gap: 8px; margin-top: 16px; background: var(--card-bg);
       padding: 12px; border-radius: 12px; border: 1px solid var(--border-color);
+      flex-wrap: wrap;
     }
     .btn {
       flex: 1; padding: 12px; border-radius: 8px; border: none; font-weight: 600;
-      font-size: 14px; cursor: pointer; text-align: center; color: #fff;
+      font-size: 14px; cursor: pointer; text-align: center; color: #fff; min-width: 80px;
     }
     .btn-primary { background: var(--accent-blue); }
     .btn-success { background: var(--accent-green); }
@@ -124,13 +136,17 @@
       border: 1px solid var(--border-color);
     }
 
-    /* A4/閲覧スタイル */
+    /* 閲覧表示用A4風コンテナ */
     .a4-container { background: #fff; color: #000; padding: 20px; border-radius: 8px; margin-top: 12px; }
     .a4-title { font-size: 20px; font-weight: bold; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 12px; }
     .a4-step-row { display: flex; border-bottom: 1px solid #ccc; padding: 12px 0; gap: 12px; }
     .a4-step-left { flex: 1; }
-    .a4-step-right { width: 40%; text-align: center; }
+    .a4-step-right { width: 50%; text-align: center; }
     .a4-step-img { width: 100%; height: auto; border-radius: 4px; }
+
+    .excel-table-container { overflow-x: auto; background: #fff; color: #000; padding: 10px; border-radius: 4px; }
+    .excel-table-container table { border-collapse: collapse; width: 100%; font-size: 12px; }
+    .excel-table-container th, .excel-table-container td { border: 1px solid #ccc; padding: 6px; text-align: left; }
     
     .toast {
       position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
@@ -191,7 +207,7 @@
 
       <div class="photo-control-grid">
         <label class="btn-photo-large" style="border-style:solid;">
-          📄 PDF/Excelデータ取込
+          📄 PDF/Excelデータ取り込み
           <input type="file" accept=".pdf,.xlsx,.xls,.csv" onchange="handleFileImport(event)">
         </label>
       </div>
@@ -212,6 +228,7 @@
       <div class="action-bar" style="margin-top:0; margin-bottom:12px;">
         <button class="btn btn-secondary" onclick="backToHome()">戻る</button>
         <button class="btn btn-primary" id="view-edit-btn" onclick="editCurrentProcedure()">編集</button>
+        <button class="btn btn-danger" id="view-delete-btn" onclick="deleteCurrentProcedure()">削除</button>
       </div>
 
       <div id="view-approve-area" style="display:none; margin-bottom:12px;" class="action-bar">
@@ -231,12 +248,12 @@
 
   </div>
 
-  <!-- ジャンプボタンモーダル -->
+  <!-- ジャンプボタン追加・カスタマイズ モーダル -->
   <div id="jump-modal" class="modal-overlay">
     <div class="modal-body">
-      <h3 style="margin-bottom:12px;">ジャンプボタン追加</h3>
+      <h3 style="margin-bottom:12px;">ジャンプボタン設定</h3>
       <div class="input-group">
-        <label>ボタン表示テキスト</label>
+        <label>表示テキスト (文言)</label>
         <input type="text" id="jump-text-input" class="input-field" value="※詳細を見る">
       </div>
       <div class="input-group">
@@ -244,12 +261,14 @@
         <select id="jump-target-select" class="input-field"></select>
       </div>
       <div class="input-group">
-        <label>背景色</label>
+        <label>塗り潰しの色</label>
         <select id="jump-bg-select" class="input-field">
-          <option value="#0a84ff">ブルー</option>
+          <option value="#0a84ff">ブルー (標準)</option>
           <option value="#ff9f0a">オレンジ</option>
           <option value="#30d158">グリーン</option>
           <option value="#ff453a">レッド</option>
+          <option value="#5E5CE6">パープル</option>
+          <option value="#2c2c2e">ダークグレー</option>
         </select>
       </div>
       <div style="display:flex; gap:8px;">
@@ -270,7 +289,7 @@
   let jumpModalContext = null;
   let activeStream = null;
 
-  // 初期化
+  // 初期化処理
   window.onload = () => {
     loadData();
     renderApprovedList();
@@ -286,13 +305,17 @@
     if (data) {
       procedures = JSON.parse(data);
     } else {
-      // 初期サンプルデータ
+      // 初期データ例
       procedures = [{
         id: 'DOC-1001',
         equipment: 'バルブユニットA',
         title: '定期点検および清掃手順',
         status: 'approved',
         updatedAt: new Date().toLocaleString('ja-JP'),
+        isPdf: false,
+        pdfUrl: null,
+        isExcel: false,
+        excelHtml: null,
         steps: [
           { stepNum: 1, text: '主バルブを完全に閉じます。', image: null, shapes: [], jumps: [] },
           { stepNum: 2, text: '圧力計が0を示しているか確認します。', image: null, shapes: [], jumps: [] }
@@ -336,7 +359,7 @@
     addStepBlock();
   }
 
-  // 工程追加
+  // 工程ブロックの追加
   function addStepBlock(data = null) {
     const container = document.getElementById('steps-container');
     const stepIdx = container.children.length;
@@ -364,10 +387,10 @@
         </button>
       </div>
       <div class="canvas-tools">
-        <button type="button" class="tool-btn active" onclick="setTool(${stepIdx}, 'free')">✏️ フリー</button>
+        <button type="button" class="tool-btn active" onclick="setTool(${stepIdx}, 'free')">✏️ フリー手書き</button>
         <button type="button" class="tool-btn" onclick="setTool(${stepIdx}, 'arrow')">↗️ 矢印</button>
         <button type="button" class="tool-btn" onclick="setTool(${stepIdx}, 'circle')">⭕ 丸印</button>
-        <button type="button" class="tool-btn" onclick="setTool(${stepIdx}, 'jump')">🔗 ジャンプ</button>
+        <button type="button" class="tool-btn" onclick="setTool(${stepIdx}, 'jump')">🔗 ジャンプボタン</button>
       </div>
       <div class="canvas-container">
         <div class="canvas-wrapper" id="canvas-wrapper-${stepIdx}">
@@ -418,7 +441,7 @@
     ctx.fillStyle = '#8e8e93';
     ctx.font = '14px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('写真を選択してください', cvs.width / 2, cvs.height / 2);
+    ctx.fillText('写真を選択するか、ファイルを取り込んでください', cvs.width / 2, cvs.height / 2);
   }
 
   function handleImageUpload(e, stepIdx) {
@@ -437,7 +460,7 @@
   }
 
   function clearStepCanvas(stepIdx) {
-    if (confirm('描画内容をクリアしますか？')) {
+    if (confirm('描画内容（手書き・矢印・丸印・ボタン）をクリアしますか？')) {
       stepCanvasData[stepIdx].shapes = [];
       stepCanvasData[stepIdx].jumps = [];
       redrawCanvas(stepIdx);
@@ -457,7 +480,7 @@
     }
   }
 
-  // 描画イベント
+  // キャンバス描画イベント (タッチ・マウス対応)
   function setupCanvasEvents(stepIdx) {
     const cvs = document.getElementById(`canvas-${stepIdx}`);
     if (!cvs) return;
@@ -589,7 +612,7 @@
     ctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI); ctx.stroke();
   }
 
-  // ジャンプボタン処理
+  // ジャンプボタンの追加モーダル制御
   function openJumpModal(stepIdx, x, y) {
     jumpModalContext = { stepIdx, x, y };
     const select = document.getElementById('jump-target-select');
@@ -615,14 +638,16 @@
     const bgColor = document.getElementById('jump-bg-select').value;
     const { stepIdx, x, y } = jumpModalContext;
 
+    // 長方形 (幅: 140px, 高さ: 40px)
     stepCanvasData[stepIdx].jumps.push({
-      x: x, y: y, w: 120, h: 36, text: text, targetIdx: targetIdx, bgColor: bgColor
+      x: x, y: y, w: 140, h: 40, text: text, targetIdx: targetIdx, bgColor: bgColor
     });
 
     closeJumpModal();
     redrawCanvas(stepIdx);
   }
 
+  // ジャンプボタンをオーバーレイで描画（長方形・リサイズハンドル付き）
   function renderJumpOverlays(stepIdx) {
     const wrapper = document.getElementById(`canvas-wrapper-${stepIdx}`);
     const cvs = document.getElementById(`canvas-${stepIdx}`);
@@ -642,17 +667,88 @@
       btn.style.backgroundColor = j.bgColor;
       btn.style.color = '#ffffff';
       btn.textContent = j.text;
+
+      // リサイズハンドルの追加
+      const handle = document.createElement('div');
+      handle.className = 'jump-resize-handle';
+      btn.appendChild(handle);
+
+      let isResizing = false;
+      handle.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        isResizing = true;
+        const startW = j.w;
+        const startH = j.h;
+        const startX = e.clientX;
+        const startY = e.clientY;
+
+        const onMouseMove = (moveEvt) => {
+          if (!isResizing) return;
+          const dw = (moveEvt.clientX - startX) / scale;
+          const dh = (moveEvt.clientY - startY) / scale;
+          j.w = Math.max(50, startW + dw);
+          j.h = Math.max(25, startH + dh);
+          redrawCanvas(stepIdx);
+        };
+
+        const onMouseUp = () => {
+          isResizing = false;
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+        };
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      });
+
       wrapper.appendChild(btn);
     });
   }
 
-  // ファイル取り込み (PDF/Excel)
-  function handleFileImport(e) {
+  // ファイル取り込み処理 (PDFを1ページ毎に画像化してCanvasにセット / Excel)
+  async function handleFileImport(e) {
     const file = e.target.files[0];
     if (!file) return;
     const ext = file.name.split('.').pop().toLowerCase();
 
-    if (ext === 'xlsx' || ext === 'xls' || ext === 'csv') {
+    let target = procedures.find(p => p.id === currentDocId);
+    if (!target) {
+      target = { id: currentDocId, status: 'draft', steps: [] };
+      procedures.push(target);
+    }
+
+    if (ext === 'pdf') {
+      const fileReader = new FileReader();
+      fileReader.onload = async function() {
+        const typedarray = new Uint8Array(this.result);
+        const pdf = await pdfjsLib.getDocument(typedarray).promise;
+        const page = await pdf.getPage(1); // 1ページ目を展開
+        
+        const viewport = page.getViewport({ scale: 1.5 });
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+        const imgDataUrl = canvas.toDataURL('image/png');
+
+        // メタデータ保存
+        target.isPdf = true;
+        target.pdfUrl = imgDataUrl;
+
+        // 工程1の背景画像としてPDFを設定し、描画を可能にする
+        const img = new Image();
+        img.onload = () => {
+          stepCanvasData[0].bgImg = img;
+          redrawCanvas(0);
+          showToast('PDFデータを取り込み描画可能にしました');
+        };
+        img.src = imgDataUrl;
+      };
+      fileReader.readAsArrayBuffer(file);
+
+    } else if (ext === 'xlsx' || ext === 'xls' || ext === 'csv') {
       const reader = new FileReader();
       reader.onload = function(evt) {
         const data = evt.target.result;
@@ -660,22 +756,15 @@
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const html = XLSX.utils.sheet_to_html(sheet);
 
-        let target = procedures.find(p => p.id === currentDocId);
-        if (!target) {
-          target = { id: currentDocId, status: 'draft' };
-          procedures.push(target);
-        }
         target.isExcel = true;
         target.excelHtml = html;
-        showToast('Excel/CSVを取り込みました');
+        showToast('Excel/CSV表データを取り込みました');
       };
       reader.readAsBinaryString(file);
-    } else {
-      showToast('PDF/画像ファイルとして保存の準備をしました');
     }
   }
 
-  // 手順書保存
+  // 手順書の保存処理（既存のisPdf, pdfUrl, isExcel等を欠損させずに更新）
   function saveProcedure(status) {
     const id = document.getElementById('doc-id').value;
     const equip = document.getElementById('doc-equip').value.trim();
@@ -723,7 +812,7 @@
     backToHome();
   }
 
-  // 編集モード再開
+  // 編集モード起動（PDFで取り込んだ背景画像や描画要素の復元）
   function editCurrentProcedure() {
     const proc = procedures.find(p => p.id === currentDocId);
     if (!proc) return;
@@ -743,7 +832,7 @@
     }
   }
 
-  // 閲覧表示
+  // 閲覧表示画面の構成
   function viewProcedure(id) {
     currentDocId = id;
     const proc = procedures.find(p => p.id === id);
@@ -756,15 +845,17 @@
     let html = `
       <div class="a4-title">${proc.title || '無題の手順書'}</div>
       <div style="font-size:12px; margin-bottom:12px; color:#555;">
-        <strong>設備名:</strong> ${proc.equipment || '未設定'} | <strong>管理番号:</strong> ${proc.id}
+        <strong>設備名:</strong> ${proc.equipment || '未設定'} | <strong>管理番号:</strong> ${proc.id} | <strong>最終更新:</strong> ${proc.updatedAt || '不明'}
       </div>
     `;
 
+    // Excelデータ表示
     if (proc.isExcel && proc.excelHtml) {
-      html += `<div style="overflow-x:auto; margin-bottom:16px;">${proc.excelHtml}</div>`;
+      html += `<div class="excel-table-container" style="margin-bottom:16px;">${proc.excelHtml}</div>`;
     }
 
-    if (proc.steps) {
+    // 工程ステップ表示
+    if (proc.steps && proc.steps.length > 0) {
       proc.steps.forEach((st, idx) => {
         html += `
           <div class="a4-step-row" id="view-step-${idx}">
@@ -804,12 +895,23 @@
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
+  // 閲覧画面から選択中の手順書を削除する機能
+  function deleteCurrentProcedure() {
+    if (!currentDocId) return;
+    if (confirm(`手順書（ID: ${currentDocId}）を本当に削除しますか？`)) {
+      procedures = procedures.filter(p => p.id !== currentDocId);
+      saveData();
+      showToast('手順書を削除しました');
+      backToHome();
+    }
+  }
+
   function approveCurrentDoc() {
     const proc = procedures.find(p => p.id === currentDocId);
     if (proc) {
       proc.status = 'approved';
       saveData();
-      showToast('承認しました');
+      showToast('承認完了しました');
       backToHome();
     }
   }
@@ -825,7 +927,7 @@
     );
 
     if (items.length === 0) {
-      list.innerHTML = '<p style="font-size:12px; color:var(--text-sub);">承認済みの手順書はありません。</p>';
+      list.innerHTML = '<p style="font-size:12px; color:var(--text-sub);">該当する承認済み手順書はありません。</p>';
       return;
     }
 
@@ -844,21 +946,21 @@
     const items = procedures.filter(p => p.status !== 'approved');
 
     if (items.length === 0) {
-      list.innerHTML = '<p style="font-size:12px; color:var(--text-sub);">対象のデータはありません。</p>';
+      list.innerHTML = '<p style="font-size:12px; color:var(--text-sub);">下書き/申請中の手順書はありません。</p>';
       return;
     }
 
     items.forEach(p => {
       const card = document.createElement('div');
       card.className = 'item-card';
-      card.onclick = () => { currentDocId = p.id; editCurrentProcedure(); };
+      card.onclick = () => viewProcedure(p.id);
       const statusLabel = p.status === 'pending' ? '【承認待ち】' : '【下書き】';
       card.innerHTML = `<div class="item-title">${statusLabel} ${p.title || '無題'}</div><div class="item-sub">設備: ${p.equipment || '未設定'} | 更新: ${p.updatedAt}</div>`;
       list.appendChild(card);
     });
   }
 
-  // QRスキャン
+  // QRコードスキャナー処理
   function openQRScanner() {
     openPanel('qr-panel');
     const video = document.getElementById('qr-video');
