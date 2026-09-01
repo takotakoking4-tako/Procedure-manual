@@ -78,7 +78,7 @@
 
     /* パネル共通 */
     .panel { display: none; background: var(--card-bg); border-radius: 20px; padding: 24px; max-width: 800px; margin: 20px auto; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
-    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 16px; gap: 12px; }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 16px; gap: 12px; flex-wrap: wrap; }
     .panel-header h2 { margin: 0; font-size: 1.4rem; display: flex; align-items: center; gap: 8px; flex: 1; }
 
     input[type="text"], textarea, select {
@@ -94,7 +94,7 @@
     }
     .step-header { font-size: 1.1rem; font-weight: 700; color: var(--primary); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
 
-    /* 写真選択カード（統一アイコン化） */
+    /* 写真選択カード */
     .photo-control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
     .btn-photo-large {
       background: var(--card-bg); border: 2px dashed var(--primary); border-radius: 14px;
@@ -148,6 +148,7 @@
     .a4-container {
       background: white; border: 1px solid var(--border); border-radius: 8px;
       padding: 32px; width: 100%; max-width: 800px; margin: 0 auto; box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+      box-sizing: border-box; overflow: hidden;
     }
     .a4-title { font-size: 1.6rem; font-weight: 800; border-bottom: 3px solid var(--primary); padding-bottom: 10px; margin-bottom: 16px; }
     .a4-meta { font-size: 0.95rem; color: #666; margin-bottom: 24px; }
@@ -164,10 +165,32 @@
     .a4-step-img-wrap { position: relative; display: inline-block; max-width: 100%; }
     .a4-step-img { max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #ddd; display: block; }
 
-    /* Excel プレビュー用テーブルスタイル */
-    .excel-table-container { overflow-x: auto; margin-top: 12px; }
-    .excel-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left; }
-    .excel-table th, .excel-table td { border: 1px solid var(--border); padding: 8px 12px; }
+    /* 取り込みファイル（PDF / Excel）の全画面フィットレスポンシブスタイル */
+    .responsive-pdf-iframe {
+      width: 100%;
+      height: 75vh;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .excel-table-container {
+      width: 100%;
+      overflow-x: auto;
+      margin-top: 12px;
+    }
+    .excel-table {
+      width: 100%;
+      table-layout: fixed; /* 全列を画面内に自動フィットさせる */
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      text-align: left;
+    }
+    .excel-table th, .excel-table td {
+      border: 1px solid var(--border);
+      padding: 6px 8px;
+      word-break: break-all;
+      overflow-wrap: anywhere;
+    }
     .excel-table th { background: #f2f2f7; font-weight: 700; }
 
     /* カメラ映像枠 */
@@ -187,29 +210,15 @@
       @page { size: A4 portrait; margin: 10mm; }
       body { background: white !important; padding: 0 !important; margin: 0 !important; color: black !important; }
       
-      header, .menu-grid, .panel-header, .tool-btn, .action-btns, #status-toast, #home-menu, #qr-modal, .modal-backdrop {
+      header, .menu-grid, .panel-header, .tool-btn, .action-btns, #status-toast, #home-menu, .modal-backdrop {
         display: none !important;
       }
 
-      body:not(.print-qr-mode) .panel { display: none !important; }
-      body:not(.print-qr-mode) #view-panel { display: block !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
-      body:not(.print-qr-mode) .a4-container { border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
-      
-      body:not(.print-qr-mode) .a4-step-row { page-break-inside: avoid; border-bottom: 1px solid #ccc !important; }
-      body:not(.print-qr-mode) .a4-step-left, body:not(.print-qr-mode) .a4-step-right { width: 50% !important; }
-      
-      body.print-qr-mode * { display: none !important; }
-      body.print-qr-mode #qr-modal, 
-      body.print-qr-mode #qr-modal *, 
-      body.print-qr-mode #qr-print-target, 
-      body.print-qr-mode #qr-print-target * {
-        display: block !important;
-      }
-      body.print-qr-mode #qr-modal {
-        position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important;
-        background: white !important; display: flex !important; align-items: center !important; justify-content: center !important;
-      }
-      body.print-qr-mode #qr-print-target { text-align: center !important; }
+      .panel { display: none !important; }
+      #view-panel { display: block !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
+      .a4-container { border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
+      .a4-step-row { page-break-inside: avoid; border-bottom: 1px solid #ccc !important; }
+      .a4-step-left, .a4-step-right { width: 50% !important; }
     }
 
     /* レスポンシブ調整 */
@@ -218,6 +227,7 @@
       .a4-step-row { flex-direction: column; }
       .a4-step-left, .a4-step-right { width: 100%; }
       .photo-control-grid { grid-template-columns: 1fr; }
+      .a4-container { padding: 16px; }
     }
   </style>
 </head>
@@ -349,10 +359,15 @@
   <!-- 6. 詳細閲覧（A4縦左右2列レイアウト・印刷対応） -->
   <section id="view-panel" class="panel" style="background: transparent; box-shadow: none;">
     <div class="panel-header" style="background: white; padding: 16px; border-radius: 14px; margin-bottom: 16px;">
-      <button class="tool-btn" id="btn-edit-doc" onclick="editCurrentDoc()">✏️ 再編集する</button>
-      <button class="tool-btn" onclick="printDoc()">🖨 印刷 / PDF保存</button>
-      <button class="tool-btn" onclick="generateDocQR()">📱 QR出力</button>
-      <button class="tool-btn" onclick="closePanel()">閉じる</button>
+      <!-- 画面遷移用の「戻る」ボタン -->
+      <button class="tool-btn" style="background: #eef6ff; color: var(--primary); border-color: var(--primary);" onclick="goBackFromView()">⬅ 戻る（一覧へ）</button>
+      
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button class="tool-btn" id="btn-edit-doc" onclick="editCurrentDoc()">✏️ 再編集</button>
+        <button class="tool-btn" onclick="printDoc()">🖨 印刷/PDF</button>
+        <button class="tool-btn" onclick="generateDocQRWindow()">📱 QR出力</button>
+        <button class="tool-btn" onclick="closePanel()">閉じる</button>
+      </div>
     </div>
 
     <div class="a4-container" id="a4-print-area">
@@ -361,21 +376,6 @@
       <div id="view-steps-body"></div>
     </div>
   </section>
-
-  <!-- QRコード表示 & 印刷用モーダル -->
-  <div id="qr-modal" class="modal-backdrop">
-    <div class="modal-content" style="text-align: center;">
-      <h3>設備ID用 QRコード</h3>
-      <div id="qr-print-target">
-        <div id="qrcode-target" style="margin:20px 0; display:flex; justify-content:center;"></div>
-        <div id="qr-print-text" style="font-size:1.1rem; font-weight:bold; margin-bottom:12px;"></div>
-      </div>
-      <div style="display:flex; gap:10px; margin-top:16px;">
-        <button class="tool-btn" style="flex:1; justify-content:center; background:var(--primary); color:white;" onclick="printQRCode()">🖨 QRコードを印刷</button>
-        <button class="tool-btn" style="flex:1; justify-content:center;" onclick="document.getElementById('qr-modal').style.display='none'">閉じる</button>
-      </div>
-    </div>
-  </div>
 
   <!-- ジャンプボタン設定モーダル -->
   <div id="jump-setting-modal" class="modal-backdrop">
@@ -412,6 +412,7 @@
     let db;
     let editingDocId = null;
     let currentViewingDoc = null;
+    let previousPanelId = 'search-panel'; // 「戻る」ボタン用の画面遷移記録
     let pendingJumpData = null;
 
     const dbRequest = indexedDB.open("LocalProcedureDB_v4", 1);
@@ -433,6 +434,11 @@
 
     /* UI切り替え */
     function openPanel(panelId) {
+      // 閲覧画面を開く直前の画面IDを記憶（戻るボタン用）
+      if (panelId !== 'view-panel' && panelId !== 'qr-panel') {
+        previousPanelId = panelId;
+      }
+
       document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
       document.getElementById('home-menu').style.display = 'none';
       document.getElementById(panelId).style.display = 'block';
@@ -446,6 +452,15 @@
       document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
       document.getElementById('home-menu').style.display = 'grid';
       stopQRScanner();
+    }
+
+    /* 詳細閲覧画面からの戻るキー動作 */
+    function goBackFromView() {
+      if (previousPanelId) {
+        openPanel(previousPanelId);
+      } else {
+        closePanel();
+      }
     }
 
     function showToast(message, type = 'success') {
@@ -571,7 +586,6 @@
       reader.readAsDataURL(file);
     }
 
-    /* 画像自体の削除処理 */
     function removeStepPhoto(stepId) {
       if (!confirm("取り込んだ写真を削除してもよろしいですか？")) return;
 
@@ -1025,8 +1039,10 @@
         body.innerHTML = '';
 
         if (doc.isPdf) {
-          body.innerHTML = `<iframe src="${doc.pdfUrl}" style="width:100%; height:800px; border:none;"></iframe>`;
+          /* 横幅全画面フィット用レスポンシブiframe */
+          body.innerHTML = `<iframe src="${doc.pdfUrl}" class="responsive-pdf-iframe"></iframe>`;
         } else if (doc.isExcel) {
+          /* 横スクロールなし・全幅調整テーブル */
           body.innerHTML = `<div class="excel-table-container">${doc.excelHtml}</div>`;
           const table = body.querySelector('table');
           if (table) table.classList.add('excel-table');
@@ -1149,31 +1165,70 @@
       };
     }
 
-    /* 印刷 & QRコード */
+    /* 印刷 */
     function printDoc() { 
-      document.body.classList.remove('print-qr-mode');
       window.print(); 
     }
 
-    function generateDocQR() {
+    /* 新画面（別ウィンドウ）出力によるQRコード生成・印刷機能 */
+    function generateDocQRWindow() {
       const equipId = document.getElementById('view-equip').textContent;
       if (!equipId || equipId === 'なし') return alert("この手順書には設備IDが割り当てられていません");
 
-      const target = document.getElementById('qrcode-target');
-      target.innerHTML = '';
-      document.getElementById('qr-print-text').textContent = `設備ID: ${equipId}`;
+      // 一時的なキャンバスでQRコード画像を生成
+      const tempCanvas = document.createElement('canvas');
+      QRCode.toCanvas(tempCanvas, equipId, { width: 300, margin: 2 }, (err) => {
+        if (err) return alert("QRコードの作成に失敗しました");
 
-      QRCode.toCanvas(equipId, { width: 220 }, (err, canvas) => {
-        if (err) return alert("QR作成失敗");
-        target.appendChild(canvas);
-        document.getElementById('qr-modal').style.display = 'flex';
+        const qrDataUrl = tempCanvas.toDataURL("image/png");
+
+        // 新しいウィンドウ（別タブ）を開いて印刷レイアウトを出力
+        const printWin = window.open('', '_blank');
+        if (!printWin) return alert("ポップアップがブロックされました。ブラウザの設定でポップアップを許可してください。");
+
+        printWin.document.write(`
+          <!DOCTYPE html>
+          <html lang="ja">
+          <head>
+            <meta charset="UTF-8">
+            <title>QRコード印刷 - ${equipId}</title>
+            <style>
+              body {
+                font-family: sans-serif;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+                margin: 0;
+              }
+              .print-card {
+                border: 2px solid #000;
+                padding: 30px;
+                border-radius: 16px;
+                text-align: center;
+                max-width: 350px;
+              }
+              img { width: 250px; height: 250px; }
+              .equip-id { font-size: 1.4rem; font-weight: bold; margin-top: 16px; }
+              @media print {
+                .no-print { display: none; }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="no-print" style="margin-bottom: 20px;">
+              <button onclick="window.print()" style="padding: 12px 24px; font-size: 1rem; font-weight: bold; background: #0a84ff; color: white; border: none; border-radius: 8px; cursor: pointer;">🖨 この画面を印刷する</button>
+            </div>
+            <div class="print-card">
+              <img src="${qrDataUrl}" alt="QR Code">
+              <div class="equip-id">設備ID: ${equipId}</div>
+            </div>
+          </body>
+          </html>
+        `);
+        printWin.document.close();
       });
-    }
-
-    function printQRCode() {
-      document.body.classList.add('print-qr-mode');
-      window.print();
-      document.body.classList.remove('print-qr-mode');
     }
 
     function updateSyncStatusUI() {
@@ -1290,7 +1345,7 @@
 
     if ('serviceWorker' in navigator) {
       const swCode = `
-        const CACHE = 'proc-v6';
+        const CACHE = 'proc-v7';
         self.addEventListener('install', e => {
           e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])));
         });
