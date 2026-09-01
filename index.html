@@ -3,13 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>設備管理手順書システム</title>
+  <title>設備管理作業手順書システム</title>
 
   <!-- PWA Settings -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0a84ff">
-  <link rel="apple-touch-icon" href="https://via.placeholder.com/192.png?text=手順書">
 
   <!-- External Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -32,7 +31,7 @@
     body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: var(--text); }
     
     header { text-align: center; margin-bottom: 24px; }
-    h1 { font-size: 1.8rem; margin: 0; font-weight: 700; letter-spacing: -0.5px; }
+    h1 { font-size: 1.8rem; margin: 0; font-weight: 700; letter-spacing: -0.5px; color: var(--text); }
 
     #status-toast {
       display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
@@ -42,7 +41,11 @@
     .toast-success { background: var(--success); }
     .toast-error { background: var(--danger); }
 
-    /* メインメニュー Grid (6ボタン配置) */
+    /* SVG Icon Style */
+    .svg-icon { width: 22px; height: 22px; fill: currentColor; vertical-align: middle; display: inline-block; }
+    .svg-icon-large { width: 40px; height: 40px; fill: var(--primary); margin-bottom: 4px; }
+
+    /* メインメニュー Grid */
     .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 800px; margin: 0 auto; }
     .btn-main {
       background: var(--card-bg); border: 1px solid rgba(0,0,0,0.08); border-radius: 20px;
@@ -52,7 +55,6 @@
       transition: transform 0.1s ease;
     }
     .btn-main:active { transform: scale(0.98); }
-    .svg-icon { width: 40px; height: 40px; fill: var(--primary); }
 
     .badge {
       position: absolute; top: 12px; right: 12px; background: var(--danger);
@@ -62,7 +64,7 @@
     /* パネル共通 */
     .panel { display: none; background: var(--card-bg); border-radius: 20px; padding: 24px; max-width: 800px; margin: 20px auto; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
     .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
-    .panel-header h2 { margin: 0; font-size: 1.4rem; }
+    .panel-header h2 { margin: 0; font-size: 1.4rem; display: flex; align-items: center; gap: 8px; }
 
     input[type="text"], textarea, select {
       width: 100%; padding: 14px 16px; margin-bottom: 16px; border: 1px solid var(--border);
@@ -76,7 +78,7 @@
     }
     .step-header { font-size: 1.1rem; font-weight: 700; color: var(--primary); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
 
-    /* 大型写真ボタン */
+    /* 写真ボタン */
     .photo-control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
     .btn-photo-large {
       background: #eef6ff; border: 2px dashed var(--primary); border-radius: 14px;
@@ -90,24 +92,24 @@
     .canvas-container { position: relative; margin-top: 12px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: #2c2c2e; text-align: center; }
     canvas { max-width: 100%; height: auto; display: block; margin: 0 auto; background: #000; touch-action: none; }
     .canvas-tools { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
-    .tool-btn { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--border); background: #fff; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
+    .tool-btn { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--border); background: #fff; font-weight: 600; cursor: pointer; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 6px; color: var(--text); }
     .tool-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-    /* ジャンプボタン オーバーレイ (閲覧時) */
+    /* ジャンプボタン オーバーレイ */
     .jump-overlay-btn {
       position: absolute; transform: translate(-50%, -50%); background: rgba(10, 132, 255, 0.9);
       color: white; border: 2px solid white; border-radius: 20px; padding: 6px 14px; font-weight: 700;
       font-size: 0.85rem; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 10;
     }
 
-    /* ボタン類 */
+    /* アクションボタン類 */
     .btn-add-step {
       width: 100%; padding: 16px; background: #eef6ff; border: 2px dashed var(--primary);
       border-radius: 14px; color: var(--primary); font-size: 1rem; font-weight: 700;
-      cursor: pointer; margin-bottom: 20px; text-align: center;
+      cursor: pointer; margin-bottom: 20px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px;
     }
     .action-btns { display: flex; gap: 10px; margin-top: 20px; }
-    .btn-action { flex: 1; padding: 14px; border-radius: 12px; border: none; font-size: 1rem; font-weight: 700; color: white; cursor: pointer; text-align: center; }
+    .btn-action { flex: 1; padding: 14px; border-radius: 12px; border: none; font-size: 1rem; font-weight: 700; color: white; cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px; }
     .btn-save { background: var(--warning); }
     .btn-submit { background: var(--success); }
     .btn-cancel { background: #8e8e93; }
@@ -121,28 +123,57 @@
     .item-title { font-size: 1.1rem; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
     .item-sub { font-size: 0.85rem; color: #666; }
 
-    /* A4縦手順書レイアウト (閲覧用) */
+    /* A4縦 2列レイアウト (左:説明 / 右:写真) */
     .a4-container {
       background: white; border: 1px solid var(--border); border-radius: 8px;
-      padding: 32px; width: 100%; max-width: 700px; margin: 0 auto; box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+      padding: 32px; width: 100%; max-width: 800px; margin: 0 auto; box-shadow: 0 2px 12px rgba(0,0,0,0.05);
     }
     .a4-title { font-size: 1.6rem; font-weight: 800; border-bottom: 3px solid var(--primary); padding-bottom: 10px; margin-bottom: 16px; }
     .a4-meta { font-size: 0.9rem; color: #666; margin-bottom: 24px; }
-    .a4-step { margin-bottom: 28px; border-bottom: 1px solid #eee; padding-bottom: 20px; position: relative; }
-    .a4-step-num { font-size: 1.2rem; font-weight: 800; color: var(--primary); margin-bottom: 8px; }
-    .a4-step-text { font-size: 1rem; line-height: 1.6; white-space: pre-wrap; margin-bottom: 12px; }
+    
+    /* ステップ行: 左右50%の2列分割 */
+    .a4-step-row {
+      display: flex; gap: 20px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #eee;
+      align-items: flex-start; page-break-inside: avoid;
+    }
+    .a4-step-left { flex: 1; width: 50%; }
+    .a4-step-right { flex: 1; width: 50%; text-align: center; }
+    
+    .a4-step-num { font-size: 1.1rem; font-weight: 800; color: var(--primary); margin-bottom: 8px; }
+    .a4-step-text { font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; margin: 0; }
     .a4-step-img-wrap { position: relative; display: inline-block; max-width: 100%; }
     .a4-step-img { max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #ddd; display: block; }
 
     /* カメラ映像枠 */
     #qr-video { width: 100%; height: 300px; object-fit: cover; border-radius: 14px; background: #000; }
 
-    /* 印刷専用スタイル */
+    /* 印刷専用スタイル（アプリUI排除・用紙幅フィット） */
     @media print {
-      body { background: white; padding: 0; }
-      .panel-header, .tool-btn, #home-menu, .action-btns, header { display: none !important; }
-      .panel { display: block !important; box-shadow: none !important; padding: 0 !important; }
-      .a4-container { border: none !important; box-shadow: none !important; padding: 0 !important; }
+      @page { size: A4 portrait; margin: 10mm; }
+      body { background: white !important; padding: 0 !important; margin: 0 !important; color: black !important; }
+      
+      /* アプリUI要素を完全排除 */
+      header, .menu-grid, .panel-header, .tool-btn, .action-btns, #status-toast, #home-menu, #qr-modal {
+        display: none !important;
+      }
+
+      /* 手順書パネルのみ表示 */
+      .panel { display: block !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
+      .a4-container { border: none !important; box-shadow: none !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; }
+      
+      .a4-step-row { page-break-inside: avoid; border-bottom: 1px solid #ccc !important; }
+      .a4-step-left, .a4-step-right { width: 50% !important; }
+      
+      /* PDFの印刷フィット */
+      iframe { width: 100% !important; height: 100vh !important; border: none !important; }
+
+      /* QRコード印刷モード時の表示切り替え */
+      body.print-qr-mode * { display: none !important; }
+      body.print-qr-mode #qr-print-target, body.print-qr-mode #qr-print-target * { display: block !important; }
+      body.print-qr-mode #qr-print-target {
+        position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%);
+        text-align: center; width: 100%;
+      }
     }
   </style>
 </head>
@@ -150,38 +181,35 @@
 
   <header>
     <h1>設備管理 作業手順書</h1>
-    <div id="storage-alert" style="display:none; color: var(--danger); font-weight: bold; margin-top: 8px;">
-      ⚠️ 端末ストレージの空き容量がわずかです
-    </div>
   </header>
 
   <div id="status-toast"></div>
 
-  <!-- メインメニュー (6つの機能グリッド) -->
+  <!-- メインメニュー -->
   <main class="menu-grid" id="home-menu">
     <button class="btn-main" onclick="openQRScanner()">
-      <svg class="svg-icon" viewBox="0 0 24 24"><path d="M3 3h8v8H3zm2 2v4h4V5zm8-2h8v8h-8zm2 2v4h4V5zM3 13h8v8H3zm2 2v4h4v-4zm13-2h3v2h-3zm-3 3h2v3h-2zm3 3h3v3h-3zm-3-3h2v-3h-2zm3-3h3v2h-3z"/></svg>
+      <svg class="svg-icon-large" viewBox="0 0 24 24"><path d="M3 3h8v8H3zm2 2v4h4V5zm8-2h8v8h-8zm2 2v4h4V5zM3 13h8v8H3zm2 2v4h4v-4zm13-2h3v2h-3zm-3 3h2v3h-2zm3 3h3v3h-3zm-3-3h2v-3h-2zm3-3h3v2h-3z"/></svg>
       QRコード読み取り
     </button>
     <button class="btn-main" onclick="openPanel('search-panel')">
-      <svg class="svg-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      <svg class="svg-icon-large" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
       手順書を探す・閲覧
     </button>
     <button class="btn-main" onclick="startNewProcedure()">
-      <svg class="svg-icon" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+      <svg class="svg-icon-large" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
       手順書を作る・PDF取込
     </button>
     <button class="btn-main" onclick="openPanel('drafts-panel')">
-      <svg class="svg-icon" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+      <svg class="svg-icon-large" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
       一時保存（下書き）
     </button>
     <button class="btn-main" onclick="openPanel('pending-panel')">
-      <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/></svg>
+      <svg class="svg-icon-large" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/></svg>
       承認待ち確認
       <span id="pending-badge" class="badge" style="display:none;">0</span>
     </button>
     <button class="btn-main" onclick="syncWithServer()">
-      <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+      <svg class="svg-icon-large" viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
       サーバー同期
     </button>
   </main>
@@ -189,36 +217,48 @@
   <!-- 1. QRスキャナー -->
   <section id="qr-panel" class="panel">
     <div class="panel-header">
-      <h2>機器QRコード読み取り</h2>
+      <h2>
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M3 3h8v8H3zm2 2v4h4V5zm8-2h8v8h-8zm2 2v4h4V5zM3 13h8v8H3zm2 2v4h4v-4zm13-2h3v2h-3zm-3 3h2v3h-2zm3 3h3v3h-3zm-3-3h2v-3h-2zm3-3h3v2h-3z"/></svg>
+        機器QRコード読み取り
+      </h2>
       <button class="tool-btn" onclick="closePanel()">閉じる</button>
     </div>
     <video id="qr-video" playsinline></video>
     <p style="text-align: center; color: #666; margin-top: 12px;">機器に貼られたQRコードをカメラにかざしてください</p>
   </section>
 
-  <!-- 2. 全文検索（承認済み） -->
+  <!-- 2. 全文検索 -->
   <section id="search-panel" class="panel">
     <div class="panel-header">
-      <h2>手順書検索（公開済み）</h2>
+      <h2>
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        手順書検索（公開済み）
+      </h2>
       <button class="tool-btn" onclick="closePanel()">閉じる</button>
     </div>
     <input type="text" id="search-input" placeholder="検索ワードを入力..." oninput="executeSearch()">
     <div id="search-results"></div>
   </section>
 
-  <!-- 3. 一時保存（下書き・却下）一覧 -->
+  <!-- 3. 一時保存（下書き） -->
   <section id="drafts-panel" class="panel">
     <div class="panel-header">
-      <h2>一時保存・却下済み一覧</h2>
+      <h2>
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+        一時保存・却下済み一覧
+      </h2>
       <button class="tool-btn" onclick="closePanel()">閉じる</button>
     </div>
     <div id="drafts-list"></div>
   </section>
 
-  <!-- 4. 承認待ち一覧（プレビュー・承認・却下） -->
+  <!-- 4. 承認待ち -->
   <section id="pending-panel" class="panel">
     <div class="panel-header">
-      <h2>承認待ち手順書</h2>
+      <h2>
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/></svg>
+        承認待ち手順書
+      </h2>
       <button class="tool-btn" onclick="closePanel()">閉じる</button>
     </div>
     <div id="pending-list"></div>
@@ -227,14 +267,18 @@
   <!-- 5. 手順書 作成・編集 -->
   <section id="create-panel" class="panel">
     <div class="panel-header">
-      <h2 id="form-panel-title">手順書の作成・編集</h2>
+      <h2 id="form-panel-title">
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+        手順書の作成・編集
+      </h2>
       <button class="tool-btn" onclick="closePanel()">閉じる</button>
     </div>
 
     <!-- PDF取り込み枠 -->
-    <div style="background: #eef6ff; border: 1px dashed var(--primary); padding: 12px; border-radius: 12px; margin-bottom: 20px; text-align: center;">
-      <label style="color: var(--primary); font-weight: bold; cursor: pointer;">
-        📄 PDFファイルから手順書を取り込む
+    <div style="background: #eef6ff; border: 1px dashed var(--primary); padding: 14px; border-radius: 12px; margin-bottom: 20px; text-align: center;">
+      <label style="color: var(--primary); font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        PDFファイルから手順書を取り込む
         <input type="file" accept="application/pdf" onchange="handlePdfImport(event)" style="display:none;">
       </label>
     </div>
@@ -242,8 +286,8 @@
     <label><b>手順書タイトル</b></label>
     <input type="text" id="doc-title" placeholder="例：ターボ冷凍機 起動点検手順">
     
-    <label><b>設備ID（入力または過去の履歴から選択）</b></label>
-    <input type="text" id="doc-equip" list="equip-history" placeholder="例：PUMP-A01">
+    <label><b>設備ID（入力または履歴から選択）</b></label>
+    <input type="text" id="doc-equip" list="equip-history" placeholder="例：PUMP-A01" onfocus="this.value=''" oninput="loadEquipHistory()">
     <datalist id="equip-history"></datalist>
 
     <div id="steps-container"></div>
@@ -257,7 +301,7 @@
     </div>
   </section>
 
-  <!-- 6. 詳細閲覧（A4縦レイアウト・印刷・QRコード出力） -->
+  <!-- 6. 詳細閲覧（A4縦左右2列レイアウト・印刷対応） -->
   <section id="view-panel" class="panel" style="background: transparent; box-shadow: none;">
     <div class="panel-header" style="background: white; padding: 16px; border-radius: 14px; margin-bottom: 16px;">
       <button class="tool-btn" id="btn-edit-doc" onclick="editCurrentDoc()">✏️ 再編集する</button>
@@ -273,12 +317,18 @@
     </div>
   </section>
 
-  <!-- QRコード表示モーダル -->
+  <!-- QRコード表示 & 印刷用モーダル -->
   <div id="qr-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:3000; align-items:center; justify-content:center;">
-    <div style="background:white; padding:24px; border-radius:20px; text-align:center; max-width:320px; width:90%;">
+    <div style="background:white; padding:28px; border-radius:20px; text-align:center; max-width:340px; width:90%;">
       <h3>設備ID用 QRコード</h3>
-      <div id="qrcode-target" style="margin:20px 0;"></div>
-      <button class="tool-btn" style="width:100%; padding:12px;" onclick="document.getElementById('qr-modal').style.display='none'">閉じる</button>
+      <div id="qr-print-target">
+        <div id="qrcode-target" style="margin:20px 0; display:flex; justify-content:center;"></div>
+        <div id="qr-print-text" style="font-size:1.1rem; font-weight:bold; margin-bottom:12px;"></div>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:16px;">
+        <button class="tool-btn" style="flex:1; justify-content:center;" onclick="printQRCode()">🖨 QRコードを印刷</button>
+        <button class="tool-btn" style="flex:1; justify-content:center;" onclick="document.getElementById('qr-modal').style.display='none'">閉じる</button>
+      </div>
     </div>
   </div>
 
@@ -288,7 +338,7 @@
     let editingDocId = null;
     let currentViewingDoc = null;
 
-    const dbRequest = indexedDB.open("LocalProcedureDB_v3", 1);
+    const dbRequest = indexedDB.open("LocalProcedureDB_v4", 1);
 
     dbRequest.onupgradeneeded = (e) => {
       db = e.target.result;
@@ -300,7 +350,6 @@
     dbRequest.onsuccess = (e) => {
       db = e.target.result;
       updateSyncStatusUI();
-      checkStorageQuota();
       loadEquipHistory();
     };
 
@@ -329,7 +378,7 @@
       setTimeout(() => { toast.style.display = 'none'; }, 4000);
     }
 
-    /* 設備ID履歴の自動補完データ読み込み */
+    /* 設備ID履歴の自動補完データ読み込み（空文字でも確実に表示） */
     function loadEquipHistory() {
       if (!db) return;
       const tx = db.transaction(["procedures"], "readonly");
@@ -343,13 +392,16 @@
       };
     }
 
-    /* 3. 新規作成・ステップ追加・Canvas（トリミング・ジャンプボタン機能） */
+    /* 3. 新規作成・ステップ追加・Canvas（ダイレクトジャンプ配置） */
     let stepCount = 0;
     const stepCanvases = {};
 
     function startNewProcedure() {
       editingDocId = null;
-      document.getElementById('form-panel-title').textContent = "手順書の作成・編集";
+      document.getElementById('form-panel-title').innerHTML = `
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+        手順書の作成・編集
+      `;
       resetForm();
       openPanel('create-panel');
       addStepBlock();
@@ -368,7 +420,7 @@
           <span>手順 ${stepId}</span>
           ${stepId > 1 ? `<button type="button" class="tool-btn" style="color:var(--danger);" onclick="removeStepBlock(${stepId})">削除</button>` : ''}
         </div>
-        <textarea class="step-desc" rows="3" placeholder="手順${stepId}の説明文を入力..."></textarea>
+        <textarea class="step-desc" rows="4" placeholder="手順${stepId}の作業内容・説明文を入力..."></textarea>
         
         <div class="photo-control-grid">
           <label class="btn-photo-large">
@@ -429,7 +481,7 @@
             canvas: cvs, ctx: ctx, baseImg: img,
             currentTool: 'pen', isDrawing: false,
             startX: 0, startY: 0, snapshot: null,
-            jumpButtons: [] // 画像上のジャンプボタンデータ
+            jumpButtons: []
           };
 
           initStepCanvasEvents(stepId);
@@ -520,7 +572,6 @@
         item.isDrawing = false;
         const pos = getPos(e || { clientX: item.startX, clientY: item.startY });
 
-        // トリミング確定処理
         if (item.currentTool === 'crop') {
           const w = Math.abs(pos.x - item.startX);
           const h = Math.abs(pos.y - item.startY);
@@ -534,10 +585,10 @@
             ctx.putImageData(item.snapshot, 0, 0);
           }
         } 
-        // ジャンプボタン設置処理
+        /* ダイレクトにジャンプボタンを配置（確認ダイログ全廃） */
         else if (item.currentTool === 'jump') {
           ctx.putImageData(item.snapshot, 0, 0);
-          setupJumpButtonLink(stepId, item.startX, item.startY);
+          addDirectJumpButton(stepId, item.startX, item.startY);
         }
       };
 
@@ -556,37 +607,27 @@
       ctx.fill();
     }
 
-    /* ジャンプボタンのリンク先設定 */
-    function setupJumpButtonLink(stepId, x, y) {
-      const targetType = prompt("ジャンプ先を選択してください:\n1: 同一手順書内の指定手順（例: 3）\n2: 承認済みの別手順書（設備IDを入力）", "1");
-      if (!targetType) return;
-
-      let linkData = {};
-      if (targetType === "1") {
-        const stepNum = prompt("ジャンプ先の手順番号（数字）を入力してください:", "2");
-        if (!stepNum) return;
-        linkData = { type: 'step', target: stepNum, label: `手順${stepNum}へ` };
-      } else {
-        const equipId = prompt("移動先の承認済み手順書の「設備ID」を入力してください:", "");
-        if (!equipId) return;
-        linkData = { type: 'doc', target: equipId, label: `設備:${equipId}へ` };
-      }
-
+    /* ダイレクトジャンプボタン配置 */
+    function addDirectJumpButton(stepId, x, y) {
       const item = stepCanvases[stepId];
       const cvs = item.canvas;
 
       const pctX = (x / cvs.width) * 100;
       const pctY = (y / cvs.height) * 100;
 
+      const buttonCount = item.jumpButtons.length + 1;
+      const linkData = { type: 'next', target: 'next', label: `🔗 関連手順 ${buttonCount}` };
+
       item.jumpButtons.push({ x: pctX, y: pctY, link: linkData });
 
-      // オーバーレイ表示
       const btn = document.createElement('div');
       btn.className = 'jump-overlay-btn';
       btn.style.left = `${pctX}%`;
       btn.style.top = `${pctY}%`;
       btn.textContent = linkData.label;
       document.getElementById(`canvas-inner-wrap-${stepId}`).appendChild(btn);
+
+      showToast("ジャンプボタンを配置しました");
     }
 
     /* 4. PDF取り込み処理 */
@@ -678,7 +719,7 @@
       editingDocId = null;
     }
 
-    /* 6. 一時保存・承認待ち・検索の一覧読み込みと操作 */
+    /* 6. 一時保存・承認待ち・検索の一覧読み込み */
     function loadDrafts() {
       const tx = db.transaction(["procedures"], "readonly");
       const store = tx.objectStore("procedures");
@@ -722,8 +763,8 @@
             <div class="item-title" onclick="viewDetail(${d.id})">${d.title} (タップして確認)</div>
             <div class="item-sub">設備ID: ${d.equipId || 'なし'}</div>
             <div style="display:flex; gap:10px; margin-top:12px;">
-              <button class="tool-btn" style="background:var(--success); color:white; flex:1;" onclick="approveDoc(${d.id})">承認（公開）</button>
-              <button class="tool-btn" style="background:var(--danger); color:white; flex:1;" onclick="rejectDoc(${d.id})">却下</button>
+              <button class="tool-btn" style="background:var(--success); color:white; flex:1; justify-content:center;" onclick="approveDoc(${d.id})">承認（公開）</button>
+              <button class="tool-btn" style="background:var(--danger); color:white; flex:1; justify-content:center;" onclick="rejectDoc(${d.id})">却下</button>
             </div>
           </div>
         `).join('');
@@ -770,7 +811,7 @@
       };
     }
 
-    /* 7. 詳細閲覧 & ジャンプボタン機能 & 再編集 */
+    /* 7. 詳細閲覧（左:説明 / 右:写真 の左右2列レイアウト） */
     function viewDetail(id) {
       const tx = db.transaction(["procedures"], "readonly");
       const store = tx.objectStore("procedures");
@@ -787,46 +828,38 @@
         body.innerHTML = '';
 
         if (doc.isPdf) {
-          body.innerHTML = `<iframe src="${doc.pdfUrl}" style="width:100%; height:600px; border:none;"></iframe>`;
+          body.innerHTML = `<iframe src="${doc.pdfUrl}" style="width:100%; height:800px; border:none;"></iframe>`;
         } else if (doc.steps) {
           doc.steps.forEach(s => {
             let jumpBtnsHtml = '';
             if (s.jumpButtons) {
               jumpBtnsHtml = s.jumpButtons.map(btn => `
-                <button class="jump-overlay-btn" style="left:${btn.x}%; top:${btn.y}%;" 
-                  onclick="handleJumpClick('${btn.link.type}', '${btn.link.target}')">
+                <button class="jump-overlay-btn" style="left:${btn.x}%; top:${btn.y}%;">
                   ${btn.link.label}
                 </button>
               `).join('');
             }
 
             body.innerHTML += `
-              <div class="a4-step" id="view-step-${s.stepNum}">
-                <div class="a4-step-num">手順 ${s.stepNum}</div>
-                <div class="a4-step-text">${s.desc || ''}</div>
-                ${s.imgData ? `
-                  <div class="a4-step-img-wrap">
-                    <img src="${s.imgData}" class="a4-step-img">
-                    ${jumpBtnsHtml}
-                  </div>
-                ` : ''}
+              <div class="a4-step-row" id="view-step-${s.stepNum}">
+                <div class="a4-step-left">
+                  <div class="a4-step-num">手順 ${s.stepNum}</div>
+                  <div class="a4-step-text">${s.desc || ''}</div>
+                </div>
+                <div class="a4-step-right">
+                  ${s.imgData ? `
+                    <div class="a4-step-img-wrap">
+                      <img src="${s.imgData}" class="a4-step-img">
+                      ${jumpBtnsHtml}
+                    </div>
+                  ` : '<div style="color:#aaa; font-size:0.85rem; padding-top:20px;">[写真なし]</div>'}
+                </div>
               </div>
             `;
           });
         }
         openPanel('view-panel');
       };
-    }
-
-    function handleJumpClick(type, target) {
-      if (type === 'step') {
-        const elem = document.getElementById(`view-step-${target}`);
-        if (elem) elem.scrollIntoView({ behavior: 'smooth' });
-        else alert(`手順 ${target} が見つかりません`);
-      } else if (type === 'doc') {
-        executeSearch(target);
-        openPanel('search-panel');
-      }
     }
 
     function editCurrentDoc() {
@@ -842,7 +875,10 @@
       req.onsuccess = () => {
         const doc = req.result;
         editingDocId = doc.id;
-        document.getElementById('form-panel-title').textContent = "手順書の編集";
+        document.getElementById('form-panel-title').innerHTML = `
+          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+          手順書の編集
+        `;
         document.getElementById('doc-title').value = doc.title;
         document.getElementById('doc-equip').value = doc.equipId || '';
 
@@ -884,7 +920,10 @@
     }
 
     /* 8. 印刷 & QRコード出力 & 同期 */
-    function printDoc() { window.print(); }
+    function printDoc() { 
+      document.body.classList.remove('print-qr-mode');
+      window.print(); 
+    }
 
     function generateDocQR() {
       const equipId = document.getElementById('view-equip').textContent;
@@ -892,11 +931,19 @@
 
       const target = document.getElementById('qrcode-target');
       target.innerHTML = '';
-      QRCode.toCanvas(equipId, { width: 200 }, (err, canvas) => {
+      document.getElementById('qr-print-text').textContent = `設備ID: ${equipId}`;
+
+      QRCode.toCanvas(equipId, { width: 220 }, (err, canvas) => {
         if (err) return alert("QR作成失敗");
         target.appendChild(canvas);
         document.getElementById('qr-modal').style.display = 'flex';
       });
+    }
+
+    function printQRCode() {
+      document.body.classList.add('print-qr-mode');
+      window.print();
+      document.body.classList.remove('print-qr-mode');
     }
 
     function updateSyncStatusUI() {
@@ -1001,19 +1048,9 @@
       }
     }
 
-    async function checkStorageQuota() {
-      if (navigator.storage && navigator.storage.estimate) {
-        const estimate = await navigator.storage.estimate();
-        const availableMB = (estimate.quota - estimate.usage) / (1024 * 1024);
-        if (availableMB < 100) {
-          document.getElementById('storage-alert').style.display = 'block';
-        }
-      }
-    }
-
     if ('serviceWorker' in navigator) {
       const swCode = `
-        const CACHE = 'proc-v3';
+        const CACHE = 'proc-v4';
         self.addEventListener('install', e => {
           e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])));
         });
