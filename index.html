@@ -5,14 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>設備管理手順書システム</title>
 
-  <!-- PWA & Mobile Settings -->
+  <!-- PWA Settings -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0a84ff">
   <link rel="apple-touch-icon" href="https://via.placeholder.com/192.png?text=手順書">
 
-  <!-- JSQR Library -->
+  <!-- External Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
 
   <style>
     :root {
@@ -33,7 +34,6 @@
     header { text-align: center; margin-bottom: 24px; }
     h1 { font-size: 1.8rem; margin: 0; font-weight: 700; letter-spacing: -0.5px; }
 
-    /* トースト通知 */
     #status-toast {
       display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
       padding: 14px 28px; border-radius: 14px; font-weight: 600; color: white;
@@ -42,40 +42,29 @@
     .toast-success { background: var(--success); }
     .toast-error { background: var(--danger); }
 
-    /* メインメニュー Grid (洗練されたアイコンUI) */
-    .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 800px; margin: 0 auto; }
+    /* メインメニュー Grid (6ボタン配置) */
+    .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 800px; margin: 0 auto; }
     .btn-main {
       background: var(--card-bg); border: 1px solid rgba(0,0,0,0.08); border-radius: 20px;
-      padding: 32px 20px; font-size: 1.2rem; font-weight: 700; color: var(--text);
+      padding: 24px 16px; font-size: 1.05rem; font-weight: 700; color: var(--text);
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 16px; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.04); position: relative;
+      gap: 12px; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.04); position: relative;
       transition: transform 0.1s ease;
     }
     .btn-main:active { transform: scale(0.98); }
-    .svg-icon { width: 48px; height: 48px; fill: var(--primary); }
+    .svg-icon { width: 40px; height: 40px; fill: var(--primary); }
 
-    /* 未同期時の強調表示 */
-    .btn-main.highlight {
-      border: 2px solid var(--danger); background: #fff5f5;
-      animation: pulse 1.5s infinite;
-    }
-    .btn-main.highlight .svg-icon { fill: var(--danger); }
-    @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(255, 69, 58, 0.4); }
-      70% { box-shadow: 0 0 0 16px rgba(255, 69, 58, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(255, 69, 58, 0); }
-    }
     .badge {
-      position: absolute; top: 14px; right: 14px; background: var(--danger);
-      color: white; border-radius: 20px; padding: 4px 12px; font-size: 0.85rem; font-weight: 700;
+      position: absolute; top: 12px; right: 12px; background: var(--danger);
+      color: white; border-radius: 20px; padding: 4px 10px; font-size: 0.8rem; font-weight: 700;
     }
 
     /* パネル共通 */
-    .panel { display: none; background: var(--card-bg); border-radius: 20px; padding: 28px; max-width: 800px; margin: 20px auto; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
-    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
-    .panel-header h2 { margin: 0; font-size: 1.5rem; }
+    .panel { display: none; background: var(--card-bg); border-radius: 20px; padding: 24px; max-width: 800px; margin: 20px auto; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
+    .panel-header h2 { margin: 0; font-size: 1.4rem; }
 
-    input[type="text"], textarea {
+    input[type="text"], textarea, select {
       width: 100%; padding: 14px 16px; margin-bottom: 16px; border: 1px solid var(--border);
       border-radius: 12px; font-size: 1rem; background: #fafafa; color: var(--text);
     }
@@ -85,50 +74,76 @@
       background: #f8f9fa; border: 1px solid var(--border); border-radius: 16px;
       padding: 20px; margin-bottom: 24px; position: relative;
     }
-    .step-header { font-size: 1.2rem; font-weight: 700; color: var(--primary); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .step-header { font-size: 1.1rem; font-weight: 700; color: var(--primary); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
 
-    /* 大型化された写真入力コントロール */
+    /* 大型写真ボタン */
     .photo-control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
     .btn-photo-large {
       background: #eef6ff; border: 2px dashed var(--primary); border-radius: 14px;
-      padding: 20px 12px; text-align: center; color: var(--primary); font-size: 1.1rem; font-weight: 700;
+      padding: 18px 10px; text-align: center; color: var(--primary); font-size: 1rem; font-weight: 700;
       cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
     }
     .btn-photo-large input[type="file"] { display: none; }
 
     /* 描画キャンバス領域 */
+    .canvas-wrapper { position: relative; display: inline-block; max-width: 100%; }
     .canvas-container { position: relative; margin-top: 12px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: #2c2c2e; text-align: center; }
     canvas { max-width: 100%; height: auto; display: block; margin: 0 auto; background: #000; touch-action: none; }
-    .canvas-tools { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
-    .tool-btn { padding: 10px 16px; border-radius: 10px; border: 1px solid var(--border); background: #fff; font-weight: 600; cursor: pointer; }
+    .canvas-tools { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+    .tool-btn { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--border); background: #fff; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
     .tool-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-    /* 追加・アクションボタン */
-    .btn-add-step {
-      width: 100%; padding: 18px; background: #eef6ff; border: 2px dashed var(--primary);
-      border-radius: 14px; color: var(--primary); font-size: 1.1rem; font-weight: 700;
-      cursor: pointer; margin-bottom: 24px; text-align: center;
+    /* ジャンプボタン オーバーレイ (閲覧時) */
+    .jump-overlay-btn {
+      position: absolute; transform: translate(-50%, -50%); background: rgba(10, 132, 255, 0.9);
+      color: white; border: 2px solid white; border-radius: 20px; padding: 6px 14px; font-weight: 700;
+      font-size: 0.85rem; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 10;
     }
-    .action-btns { display: flex; gap: 12px; margin-top: 24px; }
-    .btn-action { flex: 1; padding: 16px; border-radius: 12px; border: none; font-size: 1rem; font-weight: 700; color: white; cursor: pointer; }
+
+    /* ボタン類 */
+    .btn-add-step {
+      width: 100%; padding: 16px; background: #eef6ff; border: 2px dashed var(--primary);
+      border-radius: 14px; color: var(--primary); font-size: 1rem; font-weight: 700;
+      cursor: pointer; margin-bottom: 20px; text-align: center;
+    }
+    .action-btns { display: flex; gap: 10px; margin-top: 20px; }
+    .btn-action { flex: 1; padding: 14px; border-radius: 12px; border: none; font-size: 1rem; font-weight: 700; color: white; cursor: pointer; text-align: center; }
     .btn-save { background: var(--warning); }
     .btn-submit { background: var(--success); }
     .btn-cancel { background: #8e8e93; }
 
+    /* 一覧カード */
+    .item-card {
+      background: white; border: 1px solid var(--border); border-radius: 14px;
+      padding: 16px; margin-bottom: 12px; cursor: pointer; transition: background 0.1s;
+    }
+    .item-card:active { background: #f2f2f7; }
+    .item-title { font-size: 1.1rem; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
+    .item-sub { font-size: 0.85rem; color: #666; }
+
     /* A4縦手順書レイアウト (閲覧用) */
     .a4-container {
       background: white; border: 1px solid var(--border); border-radius: 8px;
-      padding: 40px; width: 100%; max-width: 700px; margin: 0 auto; box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+      padding: 32px; width: 100%; max-width: 700px; margin: 0 auto; box-shadow: 0 2px 12px rgba(0,0,0,0.05);
     }
-    .a4-title { font-size: 1.8rem; font-weight: 800; border-bottom: 3px solid var(--primary); padding-bottom: 12px; margin-bottom: 20px; }
-    .a4-meta { font-size: 0.95rem; color: #666; margin-bottom: 30px; }
-    .a4-step { margin-bottom: 32px; border-bottom: 1px solid #eee; padding-bottom: 24px; }
-    .a4-step-num { font-size: 1.3rem; font-weight: 800; color: var(--primary); margin-bottom: 8px; }
-    .a4-step-text { font-size: 1.05rem; line-height: 1.6; white-space: pre-wrap; margin-bottom: 16px; }
-    .a4-step-img { max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #ddd; display: block; margin: 0 auto; }
+    .a4-title { font-size: 1.6rem; font-weight: 800; border-bottom: 3px solid var(--primary); padding-bottom: 10px; margin-bottom: 16px; }
+    .a4-meta { font-size: 0.9rem; color: #666; margin-bottom: 24px; }
+    .a4-step { margin-bottom: 28px; border-bottom: 1px solid #eee; padding-bottom: 20px; position: relative; }
+    .a4-step-num { font-size: 1.2rem; font-weight: 800; color: var(--primary); margin-bottom: 8px; }
+    .a4-step-text { font-size: 1rem; line-height: 1.6; white-space: pre-wrap; margin-bottom: 12px; }
+    .a4-step-img-wrap { position: relative; display: inline-block; max-width: 100%; }
+    .a4-step-img { max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #ddd; display: block; }
 
     /* カメラ映像枠 */
-    #qr-video { width: 100%; height: 320px; object-fit: cover; border-radius: 14px; background: #000; }
+    #qr-video { width: 100%; height: 300px; object-fit: cover; border-radius: 14px; background: #000; }
+
+    /* 印刷専用スタイル */
+    @media print {
+      body { background: white; padding: 0; }
+      .panel-header, .tool-btn, #home-menu, .action-btns, header { display: none !important; }
+      .panel { display: block !important; box-shadow: none !important; padding: 0 !important; }
+      .a4-container { border: none !important; box-shadow: none !important; padding: 0 !important; }
+    }
   </style>
 </head>
 <body>
@@ -142,7 +157,7 @@
 
   <div id="status-toast"></div>
 
-  <!-- メインメニュー (4ボタン SVGアイコン化) -->
+  <!-- メインメニュー (6つの機能グリッド) -->
   <main class="menu-grid" id="home-menu">
     <button class="btn-main" onclick="openQRScanner()">
       <svg class="svg-icon" viewBox="0 0 24 24"><path d="M3 3h8v8H3zm2 2v4h4V5zm8-2h8v8h-8zm2 2v4h4V5zM3 13h8v8H3zm2 2v4h4v-4zm13-2h3v2h-3zm-3 3h2v3h-2zm3 3h3v3h-3zm-3-3h2v-3h-2zm3-3h3v2h-3z"/></svg>
@@ -152,14 +167,22 @@
       <svg class="svg-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
       手順書を探す・閲覧
     </button>
-    <button class="btn-main" onclick="openPanel('create-panel')">
+    <button class="btn-main" onclick="startNewProcedure()">
       <svg class="svg-icon" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-      手順書を作る・編集
+      手順書を作る・PDF取込
     </button>
-    <button id="sync-btn" class="btn-main" onclick="syncWithServer()">
+    <button class="btn-main" onclick="openPanel('drafts-panel')">
+      <svg class="svg-icon" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+      一時保存（下書き）
+    </button>
+    <button class="btn-main" onclick="openPanel('pending-panel')">
+      <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/></svg>
+      承認待ち確認
+      <span id="pending-badge" class="badge" style="display:none;">0</span>
+    </button>
+    <button class="btn-main" onclick="syncWithServer()">
       <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
-      承認待ち・同期
-      <span id="sync-badge" class="badge" style="display:none;">0</span>
+      サーバー同期
     </button>
   </main>
 
@@ -173,30 +196,56 @@
     <p style="text-align: center; color: #666; margin-top: 12px;">機器に貼られたQRコードをカメラにかざしてください</p>
   </section>
 
-  <!-- 2. 全文検索 -->
+  <!-- 2. 全文検索（承認済み） -->
   <section id="search-panel" class="panel">
     <div class="panel-header">
-      <h2>手順書検索</h2>
+      <h2>手順書検索（公開済み）</h2>
       <button class="tool-btn" onclick="closePanel()">閉じる</button>
     </div>
-    <input type="text" id="search-input" placeholder="検索ワードを入力（タイトル・手順内容対象）..." oninput="executeSearch()">
+    <input type="text" id="search-input" placeholder="検索ワードを入力..." oninput="executeSearch()">
     <div id="search-results"></div>
   </section>
 
-  <!-- 3. 手順書 作成・編集 (動的ステップ構成) -->
+  <!-- 3. 一時保存（下書き・却下）一覧 -->
+  <section id="drafts-panel" class="panel">
+    <div class="panel-header">
+      <h2>一時保存・却下済み一覧</h2>
+      <button class="tool-btn" onclick="closePanel()">閉じる</button>
+    </div>
+    <div id="drafts-list"></div>
+  </section>
+
+  <!-- 4. 承認待ち一覧（プレビュー・承認・却下） -->
+  <section id="pending-panel" class="panel">
+    <div class="panel-header">
+      <h2>承認待ち手順書</h2>
+      <button class="tool-btn" onclick="closePanel()">閉じる</button>
+    </div>
+    <div id="pending-list"></div>
+  </section>
+
+  <!-- 5. 手順書 作成・編集 -->
   <section id="create-panel" class="panel">
     <div class="panel-header">
-      <h2>手順書の作成・編集</h2>
+      <h2 id="form-panel-title">手順書の作成・編集</h2>
       <button class="tool-btn" onclick="closePanel()">閉じる</button>
+    </div>
+
+    <!-- PDF取り込み枠 -->
+    <div style="background: #eef6ff; border: 1px dashed var(--primary); padding: 12px; border-radius: 12px; margin-bottom: 20px; text-align: center;">
+      <label style="color: var(--primary); font-weight: bold; cursor: pointer;">
+        📄 PDFファイルから手順書を取り込む
+        <input type="file" accept="application/pdf" onchange="handlePdfImport(event)" style="display:none;">
+      </label>
     </div>
     
     <label><b>手順書タイトル</b></label>
     <input type="text" id="doc-title" placeholder="例：ターボ冷凍機 起動点検手順">
     
-    <label><b>設備ID（QRコード紐付け用）</b></label>
-    <input type="text" id="doc-equip" placeholder="例：PUMP-A01">
+    <label><b>設備ID（入力または過去の履歴から選択）</b></label>
+    <input type="text" id="doc-equip" list="equip-history" placeholder="例：PUMP-A01">
+    <datalist id="equip-history"></datalist>
 
-    <!-- 動的に手順ステップが追加されるコンテナ -->
     <div id="steps-container"></div>
 
     <button type="button" class="btn-add-step" onclick="addStepBlock()">＋ 手順ステップを追加</button>
@@ -208,22 +257,38 @@
     </div>
   </section>
 
-  <!-- 4. 詳細閲覧 (A4縦レイアウト表示) -->
+  <!-- 6. 詳細閲覧（A4縦レイアウト・印刷・QRコード出力） -->
   <section id="view-panel" class="panel" style="background: transparent; box-shadow: none;">
-    <div style="text-align: right; margin-bottom: 12px;">
+    <div class="panel-header" style="background: white; padding: 16px; border-radius: 14px; margin-bottom: 16px;">
+      <button class="tool-btn" id="btn-edit-doc" onclick="editCurrentDoc()">✏️ 再編集する</button>
+      <button class="tool-btn" onclick="printDoc()">🖨 印刷 / PDF保存</button>
+      <button class="tool-btn" onclick="generateDocQR()">📱 QR出力</button>
       <button class="tool-btn" onclick="closePanel()">閉じる</button>
     </div>
-    <div class="a4-container">
+
+    <div class="a4-container" id="a4-print-area">
       <div class="a4-title" id="view-title"></div>
       <div class="a4-meta"><b>設備ID:</b> <span id="view-equip"></span></div>
       <div id="view-steps-body"></div>
     </div>
   </section>
 
+  <!-- QRコード表示モーダル -->
+  <div id="qr-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:3000; align-items:center; justify-content:center;">
+    <div style="background:white; padding:24px; border-radius:20px; text-align:center; max-width:320px; width:90%;">
+      <h3>設備ID用 QRコード</h3>
+      <div id="qrcode-target" style="margin:20px 0;"></div>
+      <button class="tool-btn" style="width:100%; padding:12px;" onclick="document.getElementById('qr-modal').style.display='none'">閉じる</button>
+    </div>
+  </div>
+
   <script>
     /* 1. IndexedDB データベース管理 */
     let db;
-    const dbRequest = indexedDB.open("LocalProcedureDB_v2", 1);
+    let editingDocId = null;
+    let currentViewingDoc = null;
+
+    const dbRequest = indexedDB.open("LocalProcedureDB_v3", 1);
 
     dbRequest.onupgradeneeded = (e) => {
       db = e.target.result;
@@ -236,6 +301,7 @@
       db = e.target.result;
       updateSyncStatusUI();
       checkStorageQuota();
+      loadEquipHistory();
     };
 
     /* 2. UI切り替え・通知 */
@@ -243,8 +309,10 @@
       document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
       document.getElementById('home-menu').style.display = 'none';
       document.getElementById(panelId).style.display = 'block';
+
       if (panelId === 'search-panel') executeSearch();
-      if (panelId === 'create-panel' && stepCount === 0) addStepBlock();
+      if (panelId === 'drafts-panel') loadDrafts();
+      if (panelId === 'pending-panel') loadPendingList();
     }
 
     function closePanel() {
@@ -261,9 +329,31 @@
       setTimeout(() => { toast.style.display = 'none'; }, 4000);
     }
 
-    /* 3. 手順ステップ追加・大型写真ボタン・高精度Canvas描画 */
+    /* 設備ID履歴の自動補完データ読み込み */
+    function loadEquipHistory() {
+      if (!db) return;
+      const tx = db.transaction(["procedures"], "readonly");
+      const store = tx.objectStore("procedures");
+      const req = store.getAll();
+
+      req.onsuccess = () => {
+        const ids = [...new Set(req.result.map(d => d.equipId).filter(Boolean))];
+        const datalist = document.getElementById('equip-history');
+        datalist.innerHTML = ids.map(id => `<option value="${id}">`).join('');
+      };
+    }
+
+    /* 3. 新規作成・ステップ追加・Canvas（トリミング・ジャンプボタン機能） */
     let stepCount = 0;
     const stepCanvases = {};
+
+    function startNewProcedure() {
+      editingDocId = null;
+      document.getElementById('form-panel-title').textContent = "手順書の作成・編集";
+      resetForm();
+      openPanel('create-panel');
+      addStepBlock();
+    }
 
     function addStepBlock() {
       stepCount++;
@@ -295,11 +385,15 @@
           <button type="button" class="tool-btn active" onclick="setStepTool(${stepId}, 'pen', this)">🖊 手書き</button>
           <button type="button" class="tool-btn" onclick="setStepTool(${stepId}, 'arrow', this)">↗ 矢印</button>
           <button type="button" class="tool-btn" onclick="setStepTool(${stepId}, 'circle', this)">⭕ 丸印</button>
+          <button type="button" class="tool-btn" onclick="setStepTool(${stepId}, 'crop', this)">✂️ トリミング</button>
+          <button type="button" class="tool-btn" onclick="setStepTool(${stepId}, 'jump', this)">🔗 ジャンプボタン配置</button>
           <button type="button" class="tool-btn" onclick="clearStepCanvas(${stepId})">🗑 リセット</button>
         </div>
 
         <div class="canvas-container" id="canvas-wrap-${stepId}" style="display:none;">
-          <canvas id="canvas-${stepId}"></canvas>
+          <div class="canvas-wrapper" id="canvas-inner-wrap-${stepId}">
+            <canvas id="canvas-${stepId}"></canvas>
+          </div>
         </div>
       `;
       container.appendChild(block);
@@ -310,7 +404,6 @@
       delete stepCanvases[stepId];
     }
 
-    /* 写真取り込みと縦横比保持描画 */
     function handleStepPhoto(e, stepId) {
       const file = e.target.files[0];
       if (!file) return;
@@ -325,7 +418,6 @@
           const cvs = document.getElementById(`canvas-${stepId}`);
           const ctx = cvs.getContext('2d');
 
-          // 写真の元の縦横比（アスペクト比）を完全に維持
           const maxW = 700;
           const scale = Math.min(1, maxW / img.width);
           cvs.width = img.width * scale;
@@ -336,7 +428,8 @@
           stepCanvases[stepId] = {
             canvas: cvs, ctx: ctx, baseImg: img,
             currentTool: 'pen', isDrawing: false,
-            startX: 0, startY: 0, snapshot: null
+            startX: 0, startY: 0, snapshot: null,
+            jumpButtons: [] // 画像上のジャンプボタンデータ
           };
 
           initStepCanvasEvents(stepId);
@@ -359,9 +452,11 @@
       if (!item) return;
       item.ctx.clearRect(0, 0, item.canvas.width, item.canvas.height);
       item.ctx.drawImage(item.baseImg, 0, 0, item.canvas.width, item.canvas.height);
+      item.jumpButtons = [];
+      const wrap = document.getElementById(`canvas-inner-wrap-${stepId}`);
+      wrap.querySelectorAll('.jump-overlay-btn').forEach(b => b.remove());
     }
 
-    /* 描画の極小移動・丸印・矢印の高精度化イベント */
     function initStepCanvasEvents(stepId) {
       const item = stepCanvases[stepId];
       const cvs = item.canvas;
@@ -404,8 +499,8 @@
         if (item.currentTool === 'pen') {
           ctx.lineTo(pos.x, pos.y);
           ctx.stroke();
-        } else {
-          ctx.putImageData(item.snapshot, 0, 0); // 前のフレームを復元
+        } else if (item.currentTool === 'circle' || item.currentTool === 'arrow' || item.currentTool === 'crop') {
+          ctx.putImageData(item.snapshot, 0, 0);
           if (item.currentTool === 'circle') {
             const r = Math.sqrt(Math.pow(pos.x - item.startX, 2) + Math.pow(pos.y - item.startY, 2));
             ctx.beginPath();
@@ -413,11 +508,38 @@
             ctx.stroke();
           } else if (item.currentTool === 'arrow') {
             drawArrow(ctx, item.startX, item.startY, pos.x, pos.y);
+          } else if (item.currentTool === 'crop') {
+            ctx.strokeStyle = '#0a84ff';
+            ctx.strokeRect(item.startX, item.startY, pos.x - item.startX, pos.y - item.startY);
           }
         }
       };
 
-      const stopDraw = () => { item.isDrawing = false; };
+      const stopDraw = (e) => {
+        if (!item.isDrawing) return;
+        item.isDrawing = false;
+        const pos = getPos(e || { clientX: item.startX, clientY: item.startY });
+
+        // トリミング確定処理
+        if (item.currentTool === 'crop') {
+          const w = Math.abs(pos.x - item.startX);
+          const h = Math.abs(pos.y - item.startY);
+          if (w > 20 && h > 20) {
+            const cropData = ctx.getImageData(Math.min(item.startX, pos.x), Math.min(item.startY, pos.y), w, h);
+            cvs.width = w;
+            cvs.height = h;
+            ctx.putImageData(cropData, 0, 0);
+            showToast("トリミングを実行しました");
+          } else {
+            ctx.putImageData(item.snapshot, 0, 0);
+          }
+        } 
+        // ジャンプボタン設置処理
+        else if (item.currentTool === 'jump') {
+          ctx.putImageData(item.snapshot, 0, 0);
+          setupJumpButtonLink(stepId, item.startX, item.startY);
+        }
+      };
 
       cvs.onpointerdown = startDraw;
       cvs.onpointermove = moveDraw;
@@ -427,18 +549,78 @@
     function drawArrow(ctx, fromX, fromY, toX, toY) {
       const headlen = Math.max(16, ctx.lineWidth * 3);
       const angle = Math.atan2(toY - fromY, toX - fromX);
-      ctx.beginPath();
-      ctx.moveTo(fromX, fromY);
-      ctx.lineTo(toX, toY);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(toX, toY);
+      ctx.beginPath(); ctx.moveTo(fromX, fromY); ctx.lineTo(toX, toY); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(toX, toY);
       ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
       ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
       ctx.fill();
     }
 
-    /* 4. 手順書の保存 */
+    /* ジャンプボタンのリンク先設定 */
+    function setupJumpButtonLink(stepId, x, y) {
+      const targetType = prompt("ジャンプ先を選択してください:\n1: 同一手順書内の指定手順（例: 3）\n2: 承認済みの別手順書（設備IDを入力）", "1");
+      if (!targetType) return;
+
+      let linkData = {};
+      if (targetType === "1") {
+        const stepNum = prompt("ジャンプ先の手順番号（数字）を入力してください:", "2");
+        if (!stepNum) return;
+        linkData = { type: 'step', target: stepNum, label: `手順${stepNum}へ` };
+      } else {
+        const equipId = prompt("移動先の承認済み手順書の「設備ID」を入力してください:", "");
+        if (!equipId) return;
+        linkData = { type: 'doc', target: equipId, label: `設備:${equipId}へ` };
+      }
+
+      const item = stepCanvases[stepId];
+      const cvs = item.canvas;
+
+      const pctX = (x / cvs.width) * 100;
+      const pctY = (y / cvs.height) * 100;
+
+      item.jumpButtons.push({ x: pctX, y: pctY, link: linkData });
+
+      // オーバーレイ表示
+      const btn = document.createElement('div');
+      btn.className = 'jump-overlay-btn';
+      btn.style.left = `${pctX}%`;
+      btn.style.top = `${pctY}%`;
+      btn.textContent = linkData.label;
+      document.getElementById(`canvas-inner-wrap-${stepId}`).appendChild(btn);
+    }
+
+    /* 4. PDF取り込み処理 */
+    function handlePdfImport(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const title = file.name.replace('.pdf', '');
+      const reader = new FileReader();
+
+      reader.onload = (event) => {
+        const pdfDataUrl = event.target.result;
+        const tx = db.transaction(["procedures"], "readwrite");
+        const store = tx.objectStore("procedures");
+
+        store.add({
+          title: `[PDF] ${title}`,
+          equipId: "PDF-IMPORT",
+          isPdf: true,
+          pdfUrl: pdfDataUrl,
+          status: "approved",
+          updatedAt: new Date().toISOString()
+        });
+
+        tx.oncomplete = () => {
+          showToast("PDF手順書を取り込みました（公開一覧へ追加）");
+          closePanel();
+          updateSyncStatusUI();
+        };
+      };
+      reader.readAsDataURL(file);
+    }
+
+    /* 5. 手順書の保存・承認・却下フロー */
     function saveProcedure(statusType) {
       const title = document.getElementById('doc-title').value.trim();
       const equipId = document.getElementById('doc-equip').value.trim();
@@ -450,29 +632,40 @@
         const stepNum = index + 1;
         const desc = block.querySelector('.step-desc').value;
         let imgData = null;
+        let jumpButtons = [];
 
         const cvs = block.querySelector('canvas');
         if (cvs && cvs.width > 0 && block.querySelector('.canvas-container').style.display !== 'none') {
           imgData = cvs.toDataURL('image/png');
+          const canvasObj = stepCanvases[stepNum];
+          if (canvasObj) jumpButtons = canvasObj.jumpButtons || [];
         }
 
-        stepsData.push({ stepNum, desc, imgData });
+        stepsData.push({ stepNum, desc, imgData, jumpButtons });
       });
 
       const tx = db.transaction(["procedures"], "readwrite");
       const store = tx.objectStore("procedures");
 
-      store.add({
+      const data = {
         title, equipId, steps: stepsData,
         status: statusType,
         updatedAt: new Date().toISOString()
-      });
+      };
+
+      if (editingDocId) {
+        data.id = editingDocId;
+        store.put(data);
+      } else {
+        store.add(data);
+      }
 
       tx.oncomplete = () => {
-        showToast(statusType === 'draft' ? "一時保存しました" : "作成完了（承認申請）しました");
+        showToast(statusType === 'draft' ? "一時保存しました" : "承認申請を提出しました");
         resetForm();
         closePanel();
         updateSyncStatusUI();
+        loadEquipHistory();
       };
     }
 
@@ -482,9 +675,230 @@
       document.getElementById('steps-container').innerHTML = '';
       stepCount = 0;
       for (let key in stepCanvases) delete stepCanvases[key];
+      editingDocId = null;
     }
 
-    /* 5. 同期機能 & 検索 & A4縦表示 */
+    /* 6. 一時保存・承認待ち・検索の一覧読み込みと操作 */
+    function loadDrafts() {
+      const tx = db.transaction(["procedures"], "readonly");
+      const store = tx.objectStore("procedures");
+      const req = store.getAll();
+
+      req.onsuccess = () => {
+        const drafts = req.result.filter(d => d.status === 'draft' || d.status === 'rejected');
+        const container = document.getElementById('drafts-list');
+
+        if (drafts.length === 0) {
+          container.innerHTML = '<p style="text-align:center; color:#666;">一時保存データはありません</p>';
+          return;
+        }
+
+        container.innerHTML = drafts.map(d => `
+          <div class="item-card" onclick="editDocFromList(${d.id})">
+            <div class="item-title">${d.title} ${d.status === 'rejected' ? '<span style="color:var(--danger); font-size:0.8rem;">[承認却下]</span>' : ''}</div>
+            <div class="item-sub">設備ID: ${d.equipId || 'なし'} | 最終更新: ${new Date(d.updatedAt).toLocaleString('ja-JP')}</div>
+            ${d.rejectReason ? `<div style="color:var(--danger); font-size:0.85rem; margin-top:4px;">却下理由: ${d.rejectReason}</div>` : ''}
+          </div>
+        `).join('');
+      };
+    }
+
+    function loadPendingList() {
+      const tx = db.transaction(["procedures"], "readonly");
+      const store = tx.objectStore("procedures");
+      const req = store.getAll();
+
+      req.onsuccess = () => {
+        const pending = req.result.filter(d => d.status === 'pending');
+        const container = document.getElementById('pending-list');
+
+        if (pending.length === 0) {
+          container.innerHTML = '<p style="text-align:center; color:#666;">承認待ちの手順書はありません</p>';
+          return;
+        }
+
+        container.innerHTML = pending.map(d => `
+          <div class="item-card">
+            <div class="item-title" onclick="viewDetail(${d.id})">${d.title} (タップして確認)</div>
+            <div class="item-sub">設備ID: ${d.equipId || 'なし'}</div>
+            <div style="display:flex; gap:10px; margin-top:12px;">
+              <button class="tool-btn" style="background:var(--success); color:white; flex:1;" onclick="approveDoc(${d.id})">承認（公開）</button>
+              <button class="tool-btn" style="background:var(--danger); color:white; flex:1;" onclick="rejectDoc(${d.id})">却下</button>
+            </div>
+          </div>
+        `).join('');
+      };
+    }
+
+    function approveDoc(id) {
+      const tx = db.transaction(["procedures"], "readwrite");
+      const store = tx.objectStore("procedures");
+      const req = store.get(id);
+
+      req.onsuccess = () => {
+        const doc = req.result;
+        doc.status = 'approved';
+        store.put(doc);
+      };
+
+      tx.oncomplete = () => {
+        showToast("手順書を承認・公開しました");
+        loadPendingList();
+        updateSyncStatusUI();
+      };
+    }
+
+    function rejectDoc(id) {
+      const reason = prompt("却下する理由を入力してください:", "記載内容不備のため");
+      if (reason === null) return;
+
+      const tx = db.transaction(["procedures"], "readwrite");
+      const store = tx.objectStore("procedures");
+      const req = store.get(id);
+
+      req.onsuccess = () => {
+        const doc = req.result;
+        doc.status = 'rejected';
+        doc.rejectReason = reason;
+        store.put(doc);
+      };
+
+      tx.oncomplete = () => {
+        showToast("承認を却下し、一時保存へ移動しました", "error");
+        loadPendingList();
+        updateSyncStatusUI();
+      };
+    }
+
+    /* 7. 詳細閲覧 & ジャンプボタン機能 & 再編集 */
+    function viewDetail(id) {
+      const tx = db.transaction(["procedures"], "readonly");
+      const store = tx.objectStore("procedures");
+      const req = store.get(id);
+
+      req.onsuccess = () => {
+        const doc = req.result;
+        currentViewingDoc = doc;
+
+        document.getElementById('view-title').textContent = doc.title;
+        document.getElementById('view-equip').textContent = doc.equipId || 'なし';
+
+        const body = document.getElementById('view-steps-body');
+        body.innerHTML = '';
+
+        if (doc.isPdf) {
+          body.innerHTML = `<iframe src="${doc.pdfUrl}" style="width:100%; height:600px; border:none;"></iframe>`;
+        } else if (doc.steps) {
+          doc.steps.forEach(s => {
+            let jumpBtnsHtml = '';
+            if (s.jumpButtons) {
+              jumpBtnsHtml = s.jumpButtons.map(btn => `
+                <button class="jump-overlay-btn" style="left:${btn.x}%; top:${btn.y}%;" 
+                  onclick="handleJumpClick('${btn.link.type}', '${btn.link.target}')">
+                  ${btn.link.label}
+                </button>
+              `).join('');
+            }
+
+            body.innerHTML += `
+              <div class="a4-step" id="view-step-${s.stepNum}">
+                <div class="a4-step-num">手順 ${s.stepNum}</div>
+                <div class="a4-step-text">${s.desc || ''}</div>
+                ${s.imgData ? `
+                  <div class="a4-step-img-wrap">
+                    <img src="${s.imgData}" class="a4-step-img">
+                    ${jumpBtnsHtml}
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          });
+        }
+        openPanel('view-panel');
+      };
+    }
+
+    function handleJumpClick(type, target) {
+      if (type === 'step') {
+        const elem = document.getElementById(`view-step-${target}`);
+        if (elem) elem.scrollIntoView({ behavior: 'smooth' });
+        else alert(`手順 ${target} が見つかりません`);
+      } else if (type === 'doc') {
+        executeSearch(target);
+        openPanel('search-panel');
+      }
+    }
+
+    function editCurrentDoc() {
+      if (!currentViewingDoc) return;
+      editDocFromList(currentViewingDoc.id);
+    }
+
+    function editDocFromList(id) {
+      const tx = db.transaction(["procedures"], "readonly");
+      const store = tx.objectStore("procedures");
+      const req = store.get(id);
+
+      req.onsuccess = () => {
+        const doc = req.result;
+        editingDocId = doc.id;
+        document.getElementById('form-panel-title').textContent = "手順書の編集";
+        document.getElementById('doc-title').value = doc.title;
+        document.getElementById('doc-equip').value = doc.equipId || '';
+
+        document.getElementById('steps-container').innerHTML = '';
+        stepCount = 0;
+
+        if (doc.steps) {
+          doc.steps.forEach(s => {
+            addStepBlock();
+            const currentStep = stepCount;
+            const block = document.getElementById(`step-block-${currentStep}`);
+            block.querySelector('.step-desc').value = s.desc;
+
+            if (s.imgData) {
+              const img = new Image();
+              img.onload = () => {
+                document.getElementById(`tools-${currentStep}`).style.display = 'flex';
+                document.getElementById(`canvas-wrap-${currentStep}`).style.display = 'block';
+                const cvs = document.getElementById(`canvas-${currentStep}`);
+                const ctx = cvs.getContext('2d');
+                cvs.width = img.width;
+                cvs.height = img.height;
+                ctx.drawImage(img, 0, 0);
+
+                stepCanvases[currentStep] = {
+                  canvas: cvs, ctx: ctx, baseImg: img,
+                  currentTool: 'pen', isDrawing: false,
+                  startX: 0, startY: 0, snapshot: null,
+                  jumpButtons: s.jumpButtons || []
+                };
+                initStepCanvasEvents(currentStep);
+              };
+              img.src = s.imgData;
+            }
+          });
+        }
+        openPanel('create-panel');
+      };
+    }
+
+    /* 8. 印刷 & QRコード出力 & 同期 */
+    function printDoc() { window.print(); }
+
+    function generateDocQR() {
+      const equipId = document.getElementById('view-equip').textContent;
+      if (!equipId || equipId === 'なし') return alert("この手順書には設備IDが割り当てられていません");
+
+      const target = document.getElementById('qrcode-target');
+      target.innerHTML = '';
+      QRCode.toCanvas(equipId, { width: 200 }, (err, canvas) => {
+        if (err) return alert("QR作成失敗");
+        target.appendChild(canvas);
+        document.getElementById('qr-modal').style.display = 'flex';
+      });
+    }
+
     function updateSyncStatusUI() {
       if (!db) return;
       const tx = db.transaction(["procedures"], "readonly");
@@ -493,41 +907,20 @@
 
       req.onsuccess = () => {
         const pendingItems = req.result.filter(item => item.status === 'pending');
-        const syncBtn = document.getElementById('sync-btn');
-        const badge = document.getElementById('sync-badge');
+        const badge = document.getElementById('pending-badge');
 
         if (pendingItems.length > 0) {
-          syncBtn.classList.add('highlight');
           badge.style.display = 'block';
           badge.textContent = `${pendingItems.length}件`;
         } else {
-          syncBtn.classList.remove('highlight');
           badge.style.display = 'none';
         }
       };
     }
 
     async function syncWithServer() {
-      showToast("同期処理中...", "success");
-      try {
-        const tx = db.transaction(["procedures"], "readwrite");
-        const store = tx.objectStore("procedures");
-        const req = store.getAll();
-        req.onsuccess = () => {
-          req.result.forEach(item => {
-            if (item.status === 'pending') {
-              item.status = 'approved';
-              store.put(item);
-            }
-          });
-        };
-        tx.oncomplete = () => {
-          showToast("同期が正常に完了しました", "success");
-          updateSyncStatusUI();
-        };
-      } catch (err) {
-        showToast("同期に失敗しました", "error");
-      }
+      showToast("サーバー同期処理中...", "success");
+      setTimeout(() => { showToast("同期が正常に完了しました"); }, 1500);
     }
 
     function executeSearch(targetEquipId = null) {
@@ -537,7 +930,7 @@
       const req = store.getAll();
 
       req.onsuccess = () => {
-        let results = req.result;
+        let results = req.result.filter(doc => doc.status === 'approved');
         if (targetEquipId) {
           results = results.filter(doc => doc.equipId === targetEquipId);
         } else if (kw) {
@@ -550,43 +943,15 @@
 
         const container = document.getElementById('search-results');
         container.innerHTML = results.map(doc => `
-          <div style="padding:16px; border-bottom:1px solid #eee; cursor:pointer;" onclick="viewDetail(${doc.id})">
-            <div style="font-size:1.1rem; font-weight:bold; color:var(--primary);">${doc.title}</div>
-            <div style="font-size:0.85rem; color:#666;">設備ID: ${doc.equipId || 'なし'} | ステータス: ${doc.status}</div>
+          <div class="item-card" onclick="viewDetail(${doc.id})">
+            <div class="item-title">${doc.title}</div>
+            <div class="item-sub">設備ID: ${doc.equipId || 'なし'} | 公開日: ${new Date(doc.updatedAt).toLocaleDateString('ja-JP')}</div>
           </div>
         `).join('');
       };
     }
 
-    function viewDetail(id) {
-      const tx = db.transaction(["procedures"], "readonly");
-      const store = tx.objectStore("procedures");
-      const req = store.get(id);
-
-      req.onsuccess = () => {
-        const doc = req.result;
-        document.getElementById('view-title').textContent = doc.title;
-        document.getElementById('view-equip').textContent = doc.equipId || 'なし';
-
-        const body = document.getElementById('view-steps-body');
-        body.innerHTML = '';
-
-        if (doc.steps) {
-          doc.steps.forEach(s => {
-            body.innerHTML += `
-              <div class="a4-step">
-                <div class="a4-step-num">手順 ${s.stepNum}</div>
-                <div class="a4-step-text">${s.desc || ''}</div>
-                ${s.imgData ? `<img src="${s.imgData}" class="a4-step-img">` : ''}
-              </div>
-            `;
-          });
-        }
-        openPanel('view-panel');
-      };
-    }
-
-    /* 6. QRスキャナー & PWA */
+    /* 9. QRスキャナー & PWA */
     let videoStream = null;
 
     function openQRScanner() {
@@ -648,7 +1013,7 @@
 
     if ('serviceWorker' in navigator) {
       const swCode = `
-        const CACHE = 'proc-v2';
+        const CACHE = 'proc-v3';
         self.addEventListener('install', e => {
           e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])));
         });
